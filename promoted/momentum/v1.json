@@ -1,0 +1,58 @@
+{
+ "checked_as_of": "2026-06-30",
+ "fingerprint": "34ab44949483f1c9",
+ "model": "momentum",
+ "probes": [
+  {
+   "detail": "removing every row after the as-of date did not move the answer",
+   "passed": true,
+   "probe": "look-ahead"
+  },
+  {
+   "detail": "two runs produced identical output",
+   "passed": true,
+   "probe": "determinism"
+  },
+  {
+   "detail": "1 input(s) and 3 parameter(s), all declared and all used",
+   "passed": true,
+   "probe": "declaration"
+  }
+ ],
+ "promoted_at": "2026-09-12T09:27:54+00:00",
+ "spec": {
+  "description": "Cross-sectional price momentum over a formation window, skipping the recent reversal.",
+  "inputs": [
+   {
+    "description": "Daily closes, one row per symbol per day.",
+    "name": "prices"
+   }
+  ],
+  "name": "momentum",
+  "output": {
+   "description": "",
+   "name": "score"
+  },
+  "params": [
+   {
+    "default": 60,
+    "description": "Length of the formation window, in observations.",
+    "kind": "int",
+    "name": "lookback_days"
+   },
+   {
+    "default": 5,
+    "description": "Most recent observations left out, where short-horizon reversal lives.",
+    "kind": "int",
+    "name": "skip_days"
+   },
+   {
+    "default": 40,
+    "description": "Symbols with less history than this are not scored at all.",
+    "kind": "int",
+    "name": "min_history"
+   }
+  ]
+ },
+ "version": 1
+}
