@@ -32,6 +32,7 @@ class RunResult:
     output: Any
     touched_inputs: set[str] = field(default_factory=set)
     touched_params: set[str] = field(default_factory=set)
+    touched_columns: dict[str, set[str]] = field(default_factory=dict)
 
     @property
     def canonical(self) -> str:
@@ -90,4 +91,5 @@ def run(
         output=output,
         touched_inputs=set(view.touched_inputs),
         touched_params=set(view.touched_params),
+        touched_columns={k: set(v) for k, v in view.touched_columns.items()},
     )

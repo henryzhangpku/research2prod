@@ -1,0 +1,143 @@
+"""The project's fixed facts: ``asof.toml``.
+
+A signal is written against a universe, a calendar, a cost model and a set of
+date splits. None of those belong in the signal, because none of them are the
+researcher's to decide per-model -- they are the ground the whole project
+stands on, and a backtest that quietly used different ground from production
+is the classic way a good-looking result fails to reproduce.
+
+So they live in one file at the project root, are read once, and are frozen
+into every certificate. Change them and every promoted version says so.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import tomllib
+from datetime import date
+from pathlib import Path
+from typing import Literal
+
+from pydantic import BaseModel, Field, field_validator
+
+from .contracts import DataContract
+
+DEFAULT_CONFIG = Path("asof.toml")
+
+Frequency = Literal["daily", "weekly", "monthly"]
+
+
+class Split(BaseModel):
+    """A named, closed date range. ``end`` of ``None`` means open-ended."""
+
+    start: date
+    end: date | None = None
+
+    def contains(self, day: date) -> bool:
+        return self.start <= day and (self.end is None or day <= self.end)
+
+
+class Calendar(BaseModel):
+    frequency: Frequency = "daily"
+    #: Only weekdays are priced unless a project says otherwise. Holidays are
+    #: a data-contract matter: a day with no rows is simply not priced.
+    weekdays_only: bool = True
+
+    def dates(self, start: date, end: date) -> list[date]:
+        """Every as-of date in ``[start, end]`` at this frequency."""
+        from datetime import timedelta
+
+        out: list[date] = []
+        day = start
+        while day <= end:
+            if not (self.weekdays_only and day.weekday() >= 5):
+                if self.frequency == "daily":
+                    out.append(day)
+                elif self.frequency == "weekly" and day.weekday() == 4:
+                    out.append(day)
+                elif self.frequency == "monthly":
+                    nxt = day + timedelta(days=1)
+                    if nxt.month != day.month:
+                        out.append(day)
+            day += timedelta(days=1)
+        return out
+
+
+class Universe(BaseModel):
+    """Which dataset and column define the set of things a signal scores."""
+
+    source: str = "prices"
+    key: str = "symbol"
+
+
+class Costs(BaseModel):
+    """One number, applied by the harness, never by the signal."""
+
+    bps_per_trade: float = 5.0
+
+
+class Splits(BaseModel):
+    discovery: Split
+    validation: Split
+    holdout: Split | None = None
+
+    def named(self) -> dict[str, Split]:
+        out = {"discovery": self.discovery, "validation": self.validation}
+        if self.holdout is not None:
+            out["holdout"] = self.holdout
+        return out
+
+    def of(self, day: date) -> str | None:
+        for name, split in self.named().items():
+            if split.contains(day):
+                return name
+        return None
+
+
+class Project(BaseModel):
+    name: str
+    description: str = ""
+
+
+class Config(BaseModel):
+    """Everything in ``asof.toml``, validated."""
+
+    project: Project
+    calendar: Calendar = Field(default_factory=Calendar)
+    universe: Universe = Field(default_factory=Universe)
+    costs: Costs = Field(default_factory=Costs)
+    splits: Splits
+    contracts: list[DataContract] = Field(default_factory=list)
+
+    @field_validator("contracts")
+    @classmethod
+    def _unique_names(cls, value: list[DataContract]) -> list[DataContract]:
+        names = [c.name for c in value]
+        if len(names) != len(set(names)):
+            raise ValueError("data contracts must have unique names")
+        return value
+
+    def contract(self, name: str) -> DataContract | None:
+        return next((c for c in self.contracts if c.name == name), None)
+
+    def fingerprint(self) -> str:
+        """Content hash of the ground the project stands on."""
+        canonical = json.dumps(self.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(canonical.encode()).hexdigest()[:16]
+
+
+def load_config(path: Path | str = DEFAULT_CONFIG) -> Config:
+    path = Path(path)
+    with path.open("rb") as handle:
+        raw = tomllib.load(handle)
+    return Config.model_validate(raw)
+
+
+def find_config(start: Path | str = ".") -> Path | None:
+    """Walk up from ``start`` to the nearest ``asof.toml``."""
+    here = Path(start).resolve()
+    for candidate in (here, *here.parents):
+        if (candidate / DEFAULT_CONFIG.name).is_file():
+            return candidate / DEFAULT_CONFIG.name
+    return None

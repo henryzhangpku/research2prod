@@ -22,6 +22,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from . import registry
+from .config import Config, find_config, load_config
 from .probes import check as run_probes
 from .promote import PromotionRefused
 from .promote import history as read_history
@@ -44,6 +45,18 @@ def _parse(as_of: str | None) -> date:
         return date.fromisoformat(as_of)
     except ValueError:
         console.print(f"[yellow]{as_of!r} is not a date; use YYYY-MM-DD[/]")
+        raise typer.Exit(1) from None
+
+
+def _config() -> Config | None:
+    """The nearest ``asof.toml``, or None -- the probes report its absence."""
+    path = find_config()
+    if path is None:
+        return None
+    try:
+        return load_config(path)
+    except Exception as exc:  # noqa: BLE001 - a broken config must not look like a missing one
+        console.print(f"[yellow]{path} could not be read: {exc}[/]")
         raise typer.Exit(1) from None
 
 
@@ -160,7 +173,7 @@ def check(
     """Would this survive promotion? Same probes, run early."""
     declared = _get(name, models)
     day = _parse(as_of)
-    verdicts = run_probes(declared, day, data_dir=data)
+    verdicts = run_probes(declared, day, data_dir=data, config=_config())
 
     table = Table(box=box.SIMPLE_HEAD, header_style="bold", pad_edge=False,
                   title=f"[bold]{name}[/] checked against {day}", title_justify="left")
@@ -195,7 +208,7 @@ def promote(
     declared = _get(name, models)
     day = _parse(as_of)
     try:
-        artifact = do_promote(declared, day, data_dir=data, promoted_dir=promoted)
+        artifact = do_promote(declared, day, data_dir=data, promoted_dir=promoted, config=_config())
     except PromotionRefused as refused:
         console.print()
         for verdict in refused.verdicts:

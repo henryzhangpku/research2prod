@@ -1,0 +1,42 @@
+# The ground this project stands on. Read once, frozen into every certificate.
+#
+# Nothing here belongs in a signal. A signal that decided its own universe,
+# calendar or costs could not be compared with the one next to it, and a
+# backtest that quietly used different ground from production is the classic
+# way a good result fails to reproduce.
+
+[project]
+name = "asof-examples"
+description = "The example signals that ship with asof."
+
+[calendar]
+frequency = "daily"
+weekdays_only = true
+
+[universe]
+source = "prices"
+key = "symbol"
+
+[costs]
+bps_per_trade = 5.0
+
+[splits]
+discovery = { start = 2026-01-01, end = 2026-04-30 }
+validation = { start = 2026-05-01, end = 2026-06-30 }
+holdout = { start = 2026-07-01 }
+
+# ---------------------------------------------------------------------------
+# Data contracts: what the platform promises. Owned by whoever fixes it.
+# ---------------------------------------------------------------------------
+
+[[contracts]]
+name = "prices"
+owner = "platform"
+description = "Daily closes, one row per symbol per trading day."
+knowledge_time = "date"
+freshness = "T+0 18:00 America/New_York"
+columns = [
+  { name = "date", kind = "date", description = "Trading day; also knowledge time for a close." },
+  { name = "symbol", kind = "str" },
+  { name = "close", kind = "float", description = "Official close, unadjusted." },
+]

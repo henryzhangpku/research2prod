@@ -31,12 +31,41 @@ class UndeclaredInput(KeyError):
     """Raised when a model asks for a dataset its spec never declared."""
 
 
+class TrackedRow(dict):
+    """A row that remembers which columns were read.
+
+    The schema-drift probe compares what a signal *read* against what the
+    contract *promises*. Rows are plain dictionaries everywhere else, so the
+    recording happens here, in ``__getitem__``, where every column access
+    already goes.
+    """
+
+    __slots__ = ("_touched",)
+
+    def __init__(self, data: dict[str, Any], touched: set[str]):
+        super().__init__(data)
+        self._touched = touched
+
+    def __getitem__(self, key: str) -> Any:
+        self._touched.add(key)
+        return super().__getitem__(key)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        self._touched.add(key)
+        return super().get(key, default)
+
+
 @dataclass
 class Frame:
     """Rows a model is allowed to see, already bounded by the as-of date."""
 
     name: str
     rows: list[dict[str, Any]]
+    #: Every column read through these rows. Shared with the view.
+    touched_columns: set[str] = field(default_factory=set)
+
+    def __post_init__(self) -> None:
+        self.rows = [TrackedRow(row, self.touched_columns) for row in self.rows]
 
     def __len__(self) -> int:
         return len(self.rows)
@@ -88,6 +117,9 @@ class AsOfView:
     #: true rather than merely well intentioned.
     touched_inputs: set[str] = field(default_factory=set)
     touched_params: set[str] = field(default_factory=set)
+    #: Columns read, per input. What the schema-drift probe checks against
+    #: the data contract.
+    touched_columns: dict[str, set[str]] = field(default_factory=dict)
 
     def frame(self, name: str) -> Frame:
         self.touched_inputs.add(name)
@@ -96,7 +128,8 @@ class AsOfView:
                 f"{name!r} is not available; declared inputs are "
                 f"{sorted(self.datasets) or 'none'}"
             )
-        return Frame(name=name, rows=self.datasets[name].up_to(self.as_of))
+        touched = self.touched_columns.setdefault(name, set())
+        return Frame(name=name, rows=self.datasets[name].up_to(self.as_of), touched_columns=touched)
 
     def param(self, name: str) -> Any:
         self.touched_params.add(name)

@@ -21,6 +21,8 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
+from .config import Config
+from .contracts import check_rows
 from .model import DeclaredModel
 from .run import DEFAULT_DATA_DIR, load_datasets, run
 
@@ -155,6 +157,66 @@ def declaration(
 
 
 # ---------------------------------------------------------------------------
+# 4. Contract
+# ---------------------------------------------------------------------------
+
+
+def contract(
+    model: DeclaredModel,
+    as_of: date,
+    *,
+    data_dir: Path | str = DEFAULT_DATA_DIR,
+    config: Config | None = None,
+) -> Verdict:
+    """Does the signal lean only on what the platform promises?
+
+    Three things, in order of how often they bite. Every declared input must
+    have a data contract at all -- a signal reading a dataset nobody owns has
+    nobody to call when it breaks. The data must honour its contract today,
+    or the research extract and production already disagree. And the signal
+    must read only promised columns: a column that happens to be in the
+    extract is exactly the kind of thing that is not there on the first
+    production morning.
+
+    Without a config there is nothing to check against, and the probe says so
+    rather than passing -- a gate that approves in the absence of a contract
+    would make contracts optional in practice.
+    """
+    if config is None:
+        return Verdict("contract", False, "no asof.toml found, so there are no data contracts to check against")
+    try:
+        datasets = load_datasets(model, data_dir)
+        result = run(model, as_of, datasets=datasets)
+    except Exception as exc:  # noqa: BLE001
+        return Verdict("contract", False, f"probe could not complete: {exc}")
+
+    problems: list[str] = []
+    for declared in model.spec.inputs:
+        promised = config.contract(declared.name)
+        if promised is None:
+            problems.append(f"{declared.name}: declared input has no data contract (who owns it?)")
+            continue
+        dataset = datasets[declared.name]
+        if dataset.date_field != promised.knowledge_time:
+            problems.append(
+                f"{declared.name}: as-of filter runs on {dataset.date_field!r} but the "
+                f"contract's knowledge-time column is {promised.knowledge_time!r}"
+            )
+        for violation in check_rows(promised, dataset.rows):
+            problems.append(f"{declared.name}.{violation.column}: {violation.problem}")
+        drift = sorted(result.touched_columns.get(declared.name, set()) - promised.column_names)
+        if drift:
+            problems.append(
+                f"{declared.name}: signal reads column(s) the contract does not promise: "
+                f"{', '.join(drift)}"
+            )
+    if problems:
+        return Verdict("contract", False, "; ".join(problems))
+    n = len(model.spec.inputs)
+    return Verdict("contract", True, f"{n} input(s) under contract; every column read is a promised column")
+
+
+# ---------------------------------------------------------------------------
 # The gate
 # ---------------------------------------------------------------------------
 
@@ -162,10 +224,21 @@ PROBES = (look_ahead, determinism, declaration)
 
 
 def check(
-    model: DeclaredModel, as_of: date, *, data_dir: Path | str = DEFAULT_DATA_DIR
+    model: DeclaredModel,
+    as_of: date,
+    *,
+    data_dir: Path | str = DEFAULT_DATA_DIR,
+    config: Config | None = None,
 ) -> list[Verdict]:
-    """Run every probe. All must pass before a model may be promoted."""
-    return [probe(model, as_of, data_dir=data_dir) for probe in PROBES]
+    """Run every probe. All must pass before a model may be promoted.
+
+    The contract probe needs the project's ``asof.toml``; it is skipped only
+    when the caller passes ``config=None`` *explicitly and knowingly* -- the
+    CLI always resolves one, and reports its absence as a failure.
+    """
+    verdicts = [probe(model, as_of, data_dir=data_dir) for probe in PROBES]
+    verdicts.append(contract(model, as_of, data_dir=data_dir, config=config))
+    return verdicts
 
 
 # ---------------------------------------------------------------------------

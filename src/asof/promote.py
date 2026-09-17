@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+from .config import Config
 from .model import DeclaredModel
 from .probes import Verdict, check
 
@@ -61,9 +62,10 @@ def promote(
     *,
     data_dir: Path | str = "data",
     promoted_dir: Path | str = DEFAULT_PROMOTED_DIR,
+    config: Config | None = None,
 ) -> Artifact:
     """Check, then freeze. Raises :class:`PromotionRefused` if any probe fails."""
-    verdicts = check(model, as_of, data_dir=data_dir)
+    verdicts = check(model, as_of, data_dir=data_dir, config=config)
     if not all(v.passed for v in verdicts):
         raise PromotionRefused(verdicts)
 
@@ -80,6 +82,14 @@ def promote(
         "promoted_at": promoted_at,
         "checked_as_of": as_of.isoformat(),
         "spec": model.spec.model_dump(mode="json"),
+        # The ground the signal was checked on. A later certificate with a
+        # different project fingerprint changed the world, not the signal.
+        "project_fingerprint": config.fingerprint() if config else None,
+        "contracts": [
+            c.model_dump(mode="json")
+            for c in (config.contracts if config else [])
+            if c.name in model.spec.input_names
+        ],
         "probes": [
             {"probe": v.probe, "passed": v.passed, "detail": v.detail} for v in verdicts
         ],
