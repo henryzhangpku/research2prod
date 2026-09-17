@@ -65,16 +65,41 @@ class Calendar(BaseModel):
 
 
 class Universe(BaseModel):
-    """Which dataset and column define the set of things a signal scores."""
+    """Which dataset and columns define the things a signal scores and how they pay off."""
 
     source: str = "prices"
     key: str = "symbol"
+    #: The column the harness realises returns from. The signal never sees a
+    #: future value of it; the harness does, because that is what a backtest is.
+    price: str = "close"
 
 
 class Costs(BaseModel):
     """One number, applied by the harness, never by the signal."""
 
     bps_per_trade: float = 5.0
+
+
+class Gates(BaseModel):
+    """What a backtest must clear on the validation split before promotion.
+
+    Absent gates mean the researcher judges the backtest. Present gates are
+    enforced mechanically, and the certificate records which applied.
+    """
+
+    min_days: int = 0
+    min_sharpe: float | None = None
+    min_hit_rate: float | None = None
+    max_drawdown: float | None = None
+
+
+class Backtest(BaseModel):
+    """How scores become a portfolio. Fixed per project, never per signal."""
+
+    portfolio: Literal["long_short", "long_only"] = "long_short"
+    #: Fraction of the ranked universe on each side.
+    quantile: float = 0.2
+    gates: Gates = Field(default_factory=Gates)
 
 
 class Splits(BaseModel):
@@ -107,6 +132,7 @@ class Config(BaseModel):
     calendar: Calendar = Field(default_factory=Calendar)
     universe: Universe = Field(default_factory=Universe)
     costs: Costs = Field(default_factory=Costs)
+    backtest: Backtest = Field(default_factory=Backtest)
     splits: Splits
     contracts: list[DataContract] = Field(default_factory=list)
 
