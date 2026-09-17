@@ -65,6 +65,14 @@ def _parse(as_of: str | None) -> date:
         raise typer.Exit(1) from None
 
 
+def _rel(path: Path) -> str:
+    """Paths as the researcher sees them: relative to where they are standing."""
+    try:
+        return Path(path).resolve().relative_to(Path.cwd().resolve()).as_posix()
+    except ValueError:
+        return Path(path).as_posix()
+
+
 def _next(text: str) -> None:
     """Every command ends by naming the next one. The gap this project closes
     is not knowing what to do after the research is done; a tool that stops
@@ -254,7 +262,7 @@ def promote(
         Panel(
             f"[bold]{artifact.label}[/]\n"
             f"declaration {artifact.fingerprint}\n"
-            f"written to {artifact.path}",
+            f"written to {_rel(artifact.path)}",
             expand=False,
             border_style="green",
         )
@@ -421,13 +429,13 @@ def export(
     files = sorted(p.relative_to(bundle.path).as_posix() for p in bundle.path.rglob("*") if p.is_file())
     console.print()
     console.print(Panel(
-        f"[bold]{name} v{bundle.version}[/] is deployable\n{bundle.path}\n\n" + "\n".join(f"  {f}" for f in files),
+        f"[bold]{name} v{bundle.version}[/] is deployable\n{_rel(bundle.path)}\n\n" + "\n".join(f"  {f}" for f in files),
         expand=False, border_style="green",
     ))
     console.print(f"  sink: [bold]{cfg.sink.kind}[/] -> {cfg.sink.target}   schedule: [bold]{cfg.schedule}[/] UTC")
     _next(
-        f"commit and push {bundle.path.as_posix()}; the workflow runs it on schedule. "
-        f"To run it now: python {bundle.path.as_posix()}/run.py --as-of <date>"
+        f"commit and push {_rel(bundle.path)}; the workflow runs it on schedule. "
+        f"To run it now: python {_rel(bundle.path)}/run.py --as-of <date>"
     )
 
 

@@ -23,6 +23,10 @@ asof export momentum                     # the deployable unit: runner, Dockerfi
 sink your trading system already reads. Every command ends by naming the next
 one; `asof status` answers "where am I?" at any moment.
 
+<p align="center"><img src="docs/session.svg" alt="asof: the five commands, from a fresh project to a deployable bundle" width="100%"></p>
+
+<sub>Recorded from the real CLI against a fresh <code>asof new</code> project (<code>docs/record_session.py</code>). The sample panel is synthetic; the gate, the freeze and the bundle are not.</sub>
+
 ---
 
 ## The problem it removes
