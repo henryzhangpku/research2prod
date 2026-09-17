@@ -1,4 +1,4 @@
-"""`asof new` produces a project whose first five commands succeed.
+"""`research2prod new` produces a project whose first five commands succeed.
 
 This is the promise of the whole tool, so it is tested as one flow: scaffold,
 check, backtest (gates pass on the shipped sample panel), promote, export,
@@ -13,13 +13,13 @@ import subprocess
 import sys
 from datetime import date
 
-from asof import registry
-from asof.backtest import backtest
-from asof.config import load_config
-from asof.export import export
-from asof.probes import check
-from asof.promote import promote, replay
-from asof.scaffold import scaffold
+from research2prod import registry
+from research2prod.backtest import backtest
+from research2prod.config import load_config
+from research2prod.export import export
+from research2prod.probes import check
+from research2prod.promote import promote, replay
+from research2prod.scaffold import scaffold
 
 TODAY = date(2026, 9, 16)  # pinned: the sample panel's dates depend on it
 
@@ -27,9 +27,9 @@ TODAY = date(2026, 9, 16)  # pinned: the sample panel's dates depend on it
 def test_the_first_five_commands_succeed(tmp_path):
     root = tmp_path / "alpha-lab"
     created = scaffold("alpha-lab", root, today=TODAY)
-    assert {"asof.toml", "signals/momentum.py", "tests/test_signals.py", "data/prices.csv", "README.md"} <= set(created)
+    assert {"research2prod.toml", "signals/momentum.py", "tests/test_signals.py", "data/prices.csv", "README.md"} <= set(created)
 
-    cfg = load_config(root / "asof.toml")
+    cfg = load_config(root / "research2prod.toml")
     assert cfg.project.models == "signals" and cfg.contract("prices") is not None
     model = registry.load_dir(root / "signals")["momentum"]
 
@@ -48,8 +48,8 @@ def test_the_first_five_commands_succeed(tmp_path):
 
     # export: bundle plus the root workflow GitHub actually runs
     bundle = export("momentum", config=cfg, models_dir=root / "signals", promoted_dir=root / "promoted",
-                    config_path=root / "asof.toml")
-    workflow = root / ".github" / "workflows" / "asof-momentum.yml"
+                    config_path=root / "research2prod.toml")
+    workflow = root / ".github" / "workflows" / "research2prod-momentum.yml"
     assert workflow.is_file()
     assert "working-directory: promoted/momentum/v1" in workflow.read_text(encoding="utf-8")
 

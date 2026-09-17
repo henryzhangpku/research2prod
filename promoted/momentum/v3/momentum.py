@@ -12,7 +12,7 @@ calendar.
 
 from __future__ import annotations
 
-from asof import Input, Param, model
+from research2prod import Input, Param, model
 
 
 @model(

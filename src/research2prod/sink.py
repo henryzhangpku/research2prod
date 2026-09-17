@@ -29,13 +29,13 @@ SinkKind = Literal["file", "http", "custom"]
 
 
 class Sink(BaseModel):
-    """Declared once in ``asof.toml``; frozen into every bundle."""
+    """Declared once in ``research2prod.toml``; frozen into every bundle."""
 
     kind: SinkKind = "file"
     #: file: directory for ``<model>.jsonl``. http: the URL to POST to.
     #: custom: ``package.module:function`` taking ``(rows, sink)``.
     target: str = "signals"
-    #: http only. Header name whose value is read from ``ASOF_SINK_TOKEN``.
+    #: http only. Header name whose value is read from ``RESEARCH2PROD_SINK_TOKEN``.
     auth_header: str = "Authorization"
 
 
@@ -88,7 +88,7 @@ def publish(rows: list[SignalRow], sink: Sink, *, root: Path | str = ".") -> str
         body = json.dumps([r.as_dict() for r in rows]).encode()
         request = urllib.request.Request(sink.target, data=body, method="POST",
                                          headers={"Content-Type": "application/json"})
-        token = os.environ.get("ASOF_SINK_TOKEN")
+        token = os.environ.get("RESEARCH2PROD_SINK_TOKEN")
         if token:
             request.add_header(sink.auth_header, token)
         with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310 - the URL is the operator's

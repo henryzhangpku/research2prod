@@ -6,8 +6,10 @@
 # way a good result fails to reproduce.
 
 [project]
-name = "asof-examples"
-description = "The example signals that ship with asof."
+name = "research2prod-examples"
+description = "The example signals that ship with research2prod."
+models = "examples"
+data = "data"
 
 [calendar]
 frequency = "daily"

@@ -149,7 +149,7 @@ def _source_record(model: DeclaredModel) -> dict:
 def _environment_record() -> dict:
     """Enough to rebuild the interpreter a certificate was produced in."""
     packages = {}
-    for name in ("asof", "pydantic", "typer", "rich"):
+    for name in ("research2prod", "pydantic", "typer", "rich"):
         try:
             packages[name] = metadata.version(name)
         except metadata.PackageNotFoundError:

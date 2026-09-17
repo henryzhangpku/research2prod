@@ -183,7 +183,7 @@ def contract(
     would make contracts optional in practice.
     """
     if config is None:
-        return Verdict("contract", False, "no asof.toml found, so there are no data contracts to check against")
+        return Verdict("contract", False, "no research2prod.toml found, so there are no data contracts to check against")
     try:
         datasets = load_datasets(model, data_dir)
         result = run(model, as_of, datasets=datasets)
@@ -232,7 +232,7 @@ def check(
 ) -> list[Verdict]:
     """Run every probe. All must pass before a model may be promoted.
 
-    The contract probe needs the project's ``asof.toml``; it is skipped only
+    The contract probe needs the project's ``research2prod.toml``; it is skipped only
     when the caller passes ``config=None`` *explicitly and knowingly* -- the
     CLI always resolves one, and reports its absence as a failure.
     """
@@ -249,7 +249,7 @@ def check(
 @contextlib.contextmanager
 def _truncated_world(model: DeclaredModel, as_of: date, data_dir: Path):
     """A temporary directory holding the same data with the future cut off."""
-    with tempfile.TemporaryDirectory(prefix="asof-probe-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="research2prod-probe-") as tmp:
         sandbox = Path(tmp)
         target = sandbox / data_dir.name
         target.mkdir(parents=True, exist_ok=True)

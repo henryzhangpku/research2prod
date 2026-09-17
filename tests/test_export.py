@@ -16,10 +16,10 @@ from pathlib import Path
 
 import pytest
 
-from asof.config import load_config
-from asof.export import export
-from asof.promote import promote
-from asof.sink import Sink, SignalRow, publish, rows_from_output
+from research2prod.config import load_config
+from research2prod.export import export
+from research2prod.promote import promote
+from research2prod.sink import Sink, SignalRow, publish, rows_from_output
 
 TOML = """
 [project]
@@ -42,7 +42,7 @@ columns = [ { name = "date", kind = "date" }, { name = "symbol", kind = "str" },
 """
 
 SIGNAL = '''
-from asof import model
+from research2prod import model
 
 @model(name="last", inputs=["prices"])
 def last(ctx):
@@ -53,13 +53,13 @@ def last(ctx):
 @pytest.fixture
 def promoted_project(world):
     root = world.parent
-    (root / "asof.toml").write_text(TOML, encoding="utf-8")
+    (root / "research2prod.toml").write_text(TOML, encoding="utf-8")
     (root / "models").mkdir()
     (root / "models" / "last.py").write_text(SIGNAL, encoding="utf-8")
-    from asof import registry
+    from research2prod import registry
 
     model = registry.load_file(root / "models" / "last.py")["last"]
-    cfg = load_config(root / "asof.toml")
+    cfg = load_config(root / "research2prod.toml")
     promote(model, date(2026, 2, 5), data_dir=root / "data", promoted_dir=root / "promoted", config=cfg)
     return root, cfg
 
@@ -67,9 +67,9 @@ def promoted_project(world):
 def test_export_lays_out_a_complete_bundle(promoted_project):
     root, cfg = promoted_project
     bundle = export("last", config=cfg, models_dir=root / "models", promoted_dir=root / "promoted",
-                    config_path=root / "asof.toml")
+                    config_path=root / "research2prod.toml")
     names = {p.relative_to(bundle.path).as_posix() for p in bundle.path.rglob("*") if p.is_file()}
-    assert {"run.py", "last.py", "asof.toml", "certificate.json", "requirements.txt", "Dockerfile",
+    assert {"run.py", "last.py", "research2prod.toml", "certificate.json", "requirements.txt", "Dockerfile",
             "README.md", ".github/workflows/last.yml"} <= names
     readme = (bundle.path / "README.md").read_text(encoding="utf-8")
     assert "data-team" in readme and "`prices.csv`" in readme
@@ -79,7 +79,7 @@ def test_export_lays_out_a_complete_bundle(promoted_project):
 def test_the_generated_runner_runs_as_a_subprocess_and_publishes_contract_rows(promoted_project):
     root, cfg = promoted_project
     bundle = export("last", config=cfg, models_dir=root / "models", promoted_dir=root / "promoted",
-                    config_path=root / "asof.toml")
+                    config_path=root / "research2prod.toml")
     # A scheduler mounts the data; here we copy it in.
     (bundle.path / "data" / "prices.csv").write_bytes((root / "data" / "prices.csv").read_bytes())
 
@@ -98,7 +98,7 @@ def test_the_generated_runner_runs_as_a_subprocess_and_publishes_contract_rows(p
 def test_a_non_pricing_day_is_a_clean_no_op(promoted_project):
     root, cfg = promoted_project
     bundle = export("last", config=cfg, models_dir=root / "models", promoted_dir=root / "promoted",
-                    config_path=root / "asof.toml")
+                    config_path=root / "research2prod.toml")
     completed = subprocess.run([sys.executable, "run.py", "--as-of", "2026-02-07"],  # a Saturday
                                cwd=bundle.path, capture_output=True, text=True, timeout=120)
     assert completed.returncode == 0

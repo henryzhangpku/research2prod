@@ -2,7 +2,7 @@
 
 Discovery is by import, not by scanning. A module declares what it declares
 when it is imported, and a model nobody imports does not exist -- which keeps
-``asof list`` an honest answer to "what is in this project" rather than a
+``research2prod list`` an honest answer to "what is in this project" rather than a
 guess assembled from filenames.
 """
 

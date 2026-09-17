@@ -11,7 +11,7 @@ nothing about an as-of date. Every run sees the whole file, including rows
 dated after the day being priced.
 
 Nobody notices, because the numbers look fine. The backtest looks better than
-fine. ``asof check leaky`` notices in about a second.
+fine. ``research2prod check leaky`` notices in about a second.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from asof import Input, Param, model
+from research2prod import Input, Param, model
 
 
 @model(

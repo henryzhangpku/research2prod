@@ -13,9 +13,9 @@ from datetime import date
 
 import pytest
 
-from asof import model
-from asof.backtest import backtest
-from asof.config import load_config
+from research2prod import model
+from research2prod.backtest import backtest
+from research2prod.config import load_config
 
 TOML = """
 [project]
@@ -43,7 +43,7 @@ columns = [ {{ name = "date", kind = "date" }}, {{ name = "symbol", kind = "str"
 
 
 def _cfg(tmp_path, *, bps=0.0, portfolio="long_short", min_days=0, min_sharpe="0.0"):
-    path = tmp_path / "asof.toml"
+    path = tmp_path / "research2prod.toml"
     path.write_text(TOML.format(bps=bps, portfolio=portfolio, min_days=min_days, min_sharpe=min_sharpe), encoding="utf-8")
     return load_config(path)
 

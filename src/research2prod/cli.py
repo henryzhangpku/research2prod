@@ -36,13 +36,13 @@ from .run import run as run_model
 app = typer.Typer(add_completion=False, help="Promote a research model to production")
 console = Console()
 
-MODELS = typer.Option(None, "--models", help="Directory of signal modules (default: [project].models in asof.toml)")
+MODELS = typer.Option(None, "--models", help="Directory of signal modules (default: [project].models in research2prod.toml)")
 DATA = typer.Option(None, "--data", help="Directory of input datasets (default: [project].data)")
 PROMOTED = typer.Option(None, "--promoted", help="Directory of promoted artifacts (default: [project].promoted)")
 
 
 def _dirs(models: Path | None, data: Path | None, promoted: Path | None) -> tuple[Path, Path, Path]:
-    """Explicit flags win; otherwise asof.toml says where things are; otherwise
+    """Explicit flags win; otherwise research2prod.toml says where things are; otherwise
     the conventional names. A researcher in a scaffolded project types none of it."""
     cfg_path = find_config()
     base = cfg_path.parent if cfg_path else Path(".")
@@ -81,7 +81,7 @@ def _next(text: str) -> None:
 
 
 def _config() -> Config | None:
-    """The nearest ``asof.toml``, or None -- the probes report its absence."""
+    """The nearest ``research2prod.toml``, or None -- the probes report its absence."""
     path = find_config()
     if path is None:
         return None
@@ -227,7 +227,7 @@ def check(
 
     if all(v.passed for v in verdicts):
         console.print("\n  [green]ready to promote[/]")
-        _next(f"asof backtest {name}   (then: asof promote {name} --as-of {day})")
+        _next(f"research2prod backtest {name}   (then: research2prod promote {name} --as-of {day})")
         return
     console.print("\n  [yellow]promotion would be refused[/]")
     _next("fix the failing probe above, then run the same check again")
@@ -254,7 +254,7 @@ def promote(
             mark = "[bold green]PASS[/]" if verdict.passed else "[bold red]FAIL[/]"
             console.print(f"  {mark}  [bold]{verdict.probe}[/]  {verdict.detail}")
         console.print("\n  [yellow]refused. nothing was written.[/]")
-        _next(f"fix the failing check above, then: asof promote {name} --as-of {day}")
+        _next(f"fix the failing check above, then: research2prod promote {name} --as-of {day}")
         raise typer.Exit(1) from None
 
     console.print()
@@ -267,7 +267,7 @@ def promote(
             border_style="green",
         )
     )
-    _next(f"asof export {name}   (builds the deployable bundle for {artifact.label})")
+    _next(f"research2prod export {name}   (builds the deployable bundle for {artifact.label})")
 
 
 @app.command()
@@ -310,7 +310,7 @@ def backtest(
     models, data, _ = _dirs(models, data, None)
     cfg = _config()
     if cfg is None:
-        console.print("[yellow]no asof.toml found; a backtest needs the project's universe, costs and splits[/]")
+        console.print("[yellow]no research2prod.toml found; a backtest needs the project's universe, costs and splits[/]")
         raise typer.Exit(1)
     declared = _get(name, models)
     first = _parse(start) if start else cfg.splits.discovery.start
@@ -340,9 +340,9 @@ def backtest(
     console.print()
     if result.passed:
         _, _, promoted = _dirs(None, None, None)
-        _next(f"asof promote {name} --as-of {last}   (freezes v{len(read_history(name, promoted_dir=promoted)) + 1}; the gate re-runs this backtest)")
+        _next(f"research2prod promote {name} --as-of {last}   (freezes v{len(read_history(name, promoted_dir=promoted)) + 1}; the gate re-runs this backtest)")
     else:
-        _next("the validation gates in asof.toml are not met; keep researching, or discuss the gates with whoever owns asof.toml")
+        _next("the validation gates in research2prod.toml are not met; keep researching, or discuss the gates with whoever owns research2prod.toml")
         raise typer.Exit(1)
 
 
@@ -373,7 +373,7 @@ def replay(
         _next("tell the data owner; if the restatement is right, promote a new version rather than editing this one")
     else:
         console.print(f"  [yellow]{name} v{chosen} no longer reproduces {report['as_of']}: the source changed since promotion[/]")
-        _next(f"asof promote {name} --as-of <date>   (a changed body is a new version, never an edit)")
+        _next(f"research2prod promote {name} --as-of <date>   (a changed body is a new version, never an edit)")
     raise typer.Exit(1)
 
 
@@ -385,8 +385,8 @@ def status(models: Path = MODELS, promoted: Path = PROMOTED) -> None:
     found = registry.load_dir(models)
     console.print()
     if cfg is None:
-        console.print("  [yellow]no asof.toml[/]: the project has no ground yet")
-        _next("asof new <project>   (or write asof.toml by hand: universe, calendar, costs, splits, contracts)")
+        console.print("  [yellow]no research2prod.toml[/]: the project has no ground yet")
+        _next("research2prod new <project>   (or write research2prod.toml by hand: universe, calendar, costs, splits, contracts)")
         return
     console.print(f"  project [bold]{cfg.project.name}[/]  |  ground {cfg.fingerprint()}  |  {len(cfg.contracts)} data contract(s)")
     table = Table(box=box.SIMPLE_HEAD, header_style="bold", pad_edge=False)
@@ -396,11 +396,11 @@ def status(models: Path = MODELS, promoted: Path = PROMOTED) -> None:
     for name in sorted(found):
         versions = read_history(name, promoted_dir=promoted)
         if not versions:
-            table.add_row(f"[bold]{name}[/]", "[dim]never[/]", f"asof check {name} --as-of <date>")
+            table.add_row(f"[bold]{name}[/]", "[dim]never[/]", f"research2prod check {name} --as-of <date>")
             continue
         latest = versions[-1]
         bundle = promoted / name / f"v{latest['version']}"
-        nxt = f"asof replay {name}   (deployed as v{latest['version']})" if bundle.exists() else f"asof export {name}"
+        nxt = f"research2prod replay {name}   (deployed as v{latest['version']})" if bundle.exists() else f"research2prod export {name}"
         table.add_row(f"[bold]{name}[/]", f"v{latest['version']} on {latest['promoted_at'][:10]}", nxt)
     console.print(table)
     console.print()
@@ -417,11 +417,11 @@ def export(
     models, _, promoted = _dirs(models, None, promoted)
     cfg = _config()
     if cfg is None:
-        console.print("[yellow]no asof.toml found; a bundle carries the project ground with it[/]")
+        console.print("[yellow]no research2prod.toml found; a bundle carries the project ground with it[/]")
         raise typer.Exit(1)
     try:
         bundle = do_export(name, config=cfg, version=version, models_dir=models,
-                           promoted_dir=promoted, config_path=find_config() or "asof.toml")
+                           promoted_dir=promoted, config_path=find_config() or "research2prod.toml")
     except (KeyError, FileNotFoundError, ValueError) as exc:
         console.print(f"[yellow]{exc}[/]")
         raise typer.Exit(1) from None
@@ -452,12 +452,12 @@ def serve(
     models, data, promoted = _dirs(models, data, promoted)
     cfg = _config()
     if cfg is None:
-        console.print("[yellow]no asof.toml found; serving needs the sink and calendar[/]")
+        console.print("[yellow]no research2prod.toml found; serving needs the sink and calendar[/]")
         raise typer.Exit(1)
     versions = read_history(name, promoted_dir=promoted)
     if not versions:
         console.print(f"[yellow]{name} has never been promoted; serve only publishes promoted signals[/]")
-        _next(f"asof promote {name} --as-of <date>")
+        _next(f"research2prod promote {name} --as-of <date>")
         raise typer.Exit(1)
     payload = versions[-1] if version is None else next((p for p in versions if p["version"] == version), None)
     if payload is None:
@@ -470,7 +470,7 @@ def serve(
                             fingerprint=payload["fingerprint"])
     receipt = publish(rows, cfg.sink)
     console.print(f"\n  {name} v{payload['version']} priced {day}: {len(rows)} row(s)  ->  {receipt}")
-    _next(f"asof replay {name}   (any time, to confirm the promoted answer still reproduces)")
+    _next(f"research2prod replay {name}   (any time, to confirm the promoted answer still reproduces)")
 
 
 @app.command()
@@ -491,7 +491,7 @@ def new(
         f"[bold]{name}[/] is ready at {target}\n\n" + "\n".join(f"  {f}" for f in created),
         expand=False, border_style="green",
     ))
-    _next(f"cd {target}  &&  asof status   (then write your signal in signals/, next to the example)")
+    _next(f"cd {target}  &&  research2prod status   (then write your signal in signals/, next to the example)")
 
 
 if __name__ == "__main__":  # pragma: no cover

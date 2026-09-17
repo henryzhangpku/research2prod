@@ -1,4 +1,4 @@
-asof==0.1.0
+research2prod==0.1.0
 pydantic==2.13.5
 rich==15.0.0
 typer==0.27.2

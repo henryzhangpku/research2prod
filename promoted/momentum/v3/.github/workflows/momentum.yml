@@ -20,10 +20,10 @@ jobs:
           python-version: "3.11"
       - run: pip install -r requirements.txt
       # Put your data sync here: the job expects ./data/<input>.csv for every
-      # declared input. The contracts in asof.toml say what each file must hold.
+      # declared input. The contracts in research2prod.toml say what each file must hold.
       - run: python run.py ${{ inputs.as_of && format('--as-of {0}', inputs.as_of) || '' }}
         env:
-          ASOF_SINK_TOKEN: ${{ secrets.ASOF_SINK_TOKEN }}
+          RESEARCH2PROD_SINK_TOKEN: ${{ secrets.RESEARCH2PROD_SINK_TOKEN }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

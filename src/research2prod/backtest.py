@@ -1,6 +1,6 @@
 """The backtest harness. One execution path, many dates.
 
-A backtest here is nothing more than :func:`asof.run.run` called once per
+A backtest here is nothing more than :func:`research2prod.run.run` called once per
 as-of date, followed by a fixed portfolio rule and a fixed cost. The signal
 does not know it is being backtested, which is the point: there is no
 "backtest mode" whose behaviour could differ from production, because there is

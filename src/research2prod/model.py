@@ -15,7 +15,7 @@ handing it to somebody else.
         ...
         return {"AAPL": 0.12}
 
-``ctx`` is an :class:`~asof.data.AsOfView`. It answers ``ctx.as_of``,
+``ctx`` is an :class:`~research2prod.data.AsOfView`. It answers ``ctx.as_of``,
 ``ctx.frame(name)`` and ``ctx.param(name)``, and it cannot be persuaded to
 return a row after the as-of date.
 """

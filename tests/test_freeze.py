@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest
 
-from asof.config import load_config
-from asof.promote import PromotionRefused, promote, replay
+from research2prod.config import load_config
+from research2prod.promote import PromotionRefused, promote, replay
 
 AS_OF = date(2026, 2, 5)
 
@@ -40,7 +40,7 @@ columns = [ {{ name = "date", kind = "date" }}, {{ name = "symbol", kind = "str"
 """
 
 SIGNAL = '''
-from asof import model
+from research2prod import model
 
 @model(name="last", inputs=["prices"])
 def last(ctx):
@@ -51,10 +51,10 @@ def last(ctx):
 @pytest.fixture
 def project(world):
     root = world.parent
-    (root / "asof.toml").write_text(TOML.format(min_days=0), encoding="utf-8")
+    (root / "research2prod.toml").write_text(TOML.format(min_days=0), encoding="utf-8")
     (root / "models").mkdir()
     (root / "models" / "last.py").write_text(SIGNAL, encoding="utf-8")
-    from asof import registry
+    from research2prod import registry
 
     model = registry.load_file(root / "models" / "last.py")["last"]
     return root, model
@@ -62,7 +62,7 @@ def project(world):
 
 def test_the_certificate_freezes_everything_a_stranger_needs(project):
     root, model = project
-    cfg = load_config(root / "asof.toml")
+    cfg = load_config(root / "research2prod.toml")
     artifact = promote(model, AS_OF, data_dir=root / "data", promoted_dir=root / "promoted", config=cfg)
     payload = json.loads(artifact.path.read_text(encoding="utf-8"))
     assert payload["golden"]["as_of"] == AS_OF.isoformat()
@@ -78,8 +78,8 @@ def test_the_certificate_freezes_everything_a_stranger_needs(project):
 
 def test_backtest_gates_are_part_of_the_gate(project):
     root, model = project
-    (root / "asof.toml").write_text(TOML.format(min_days=10_000), encoding="utf-8")
-    cfg = load_config(root / "asof.toml")
+    (root / "research2prod.toml").write_text(TOML.format(min_days=10_000), encoding="utf-8")
+    cfg = load_config(root / "research2prod.toml")
     with pytest.raises(PromotionRefused) as refused:
         promote(model, AS_OF, data_dir=root / "data", promoted_dir=root / "promoted", config=cfg)
     assert any(v.probe == "backtest.min_days" and not v.passed for v in refused.value.verdicts)
@@ -87,7 +87,7 @@ def test_backtest_gates_are_part_of_the_gate(project):
 
 def test_replay_reproduces_then_notices_a_restatement(project):
     root, model = project
-    cfg = load_config(root / "asof.toml")
+    cfg = load_config(root / "research2prod.toml")
     artifact = promote(model, AS_OF, data_dir=root / "data", promoted_dir=root / "promoted", config=cfg)
 
     report = replay("last", artifact.version, data_dir=root / "data", promoted_dir=root / "promoted", models_dir=root / "models")
@@ -112,10 +112,10 @@ def test_replay_reproduces_then_notices_a_restatement(project):
 
 def test_replay_blames_the_code_when_the_source_changed(project):
     root, model = project
-    cfg = load_config(root / "asof.toml")
+    cfg = load_config(root / "research2prod.toml")
     artifact = promote(model, AS_OF, data_dir=root / "data", promoted_dir=root / "promoted", config=cfg)
     (root / "models" / "last.py").write_text(SIGNAL.replace('row["close"]', 'row["close"] * 2'), encoding="utf-8")
-    from asof import registry
+    from research2prod import registry
 
     registry.load_file(root / "models" / "last.py")  # re-register the edited body
     report = replay("last", artifact.version, data_dir=root / "data", promoted_dir=root / "promoted", models_dir=root / "models")

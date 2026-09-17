@@ -1,8 +1,8 @@
-"""``asof new``: a project a researcher can start writing in immediately.
+"""``research2prod new``: a project a researcher can start writing in immediately.
 
 The scaffold answers every "where do I put it" before it is asked: signals go
-in ``signals/``, data in ``data/``, the ground in ``asof.toml``. It ships a
-synthetic price panel so ``asof check`` and ``asof backtest`` work before any
+in ``signals/``, data in ``data/``, the ground in ``research2prod.toml``. It ships a
+synthetic price panel so ``research2prod check`` and ``research2prod backtest`` work before any
 real data is wired in, one correct signal to copy from, and a test that runs
 the promotion gate over every signal in the project -- so CI refuses what
 promotion would refuse, on every push.
@@ -20,7 +20,7 @@ import random
 from datetime import date, timedelta
 from pathlib import Path
 
-ASOF_TOML = '''# The ground this project stands on. Read once, frozen into every certificate.
+RESEARCH2PROD_TOML = '''# The ground this project stands on. Read once, frozen into every certificate.
 # Nothing in here belongs in a signal.
 
 [project]
@@ -95,7 +95,7 @@ this file production code as written.
 
 from __future__ import annotations
 
-from asof import Input, Param, model
+from research2prod import Input, Param, model
 
 
 @model(
@@ -138,12 +138,12 @@ from pathlib import Path
 
 import pytest
 
-from asof import registry
-from asof.config import load_config
-from asof.probes import check
+from research2prod import registry
+from research2prod.config import load_config
+from research2prod.probes import check
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG = load_config(ROOT / "asof.toml")
+CONFIG = load_config(ROOT / "research2prod.toml")
 SIGNALS = registry.load_dir(ROOT / CONFIG.project.models)
 AS_OF = CONFIG.splits.validation.end or date.today()
 
@@ -157,20 +157,20 @@ def test_every_signal_passes_the_promotion_gate(name):
 
 README = '''# {name}
 
-A quant research project on [asof](https://github.com/henryzhangpku/asof): write the
+A quant research project on [research2prod](https://github.com/henryzhangpku/research2prod): write the
 signal once, and it is already production code.
 
 ## The five commands
 
 ```bash
-asof status                                  # where every signal is, and what to do next
-asof check momentum --as-of {val_end}        # would promotion accept it?  (look-ahead, determinism, declaration, contract)
-asof backtest momentum                       # discovery / validation splits from asof.toml, same code path as production
-asof promote momentum --as-of {val_end}      # freeze: certificate with golden output, source hash, environment, backtest
-asof export momentum                         # the deployable bundle: runner, Dockerfile, schedule, operator README
+research2prod status                                  # where every signal is, and what to do next
+research2prod check momentum --as-of {val_end}        # would promotion accept it?  (look-ahead, determinism, declaration, contract)
+research2prod backtest momentum                       # discovery / validation splits from research2prod.toml, same code path as production
+research2prod promote momentum --as-of {val_end}      # freeze: certificate with golden output, source hash, environment, backtest
+research2prod export momentum                         # the deployable bundle: runner, Dockerfile, schedule, operator README
 ```
 
-`git push` after `export` and the job runs on the schedule in `asof.toml`,
+`git push` after `export` and the job runs on the schedule in `research2prod.toml`,
 publishing `(as_of, key, score, model, version, fingerprint)` rows to the sink.
 
 ## Write a signal
@@ -180,7 +180,7 @@ through `ctx.frame(...)`; return `{{key: score}}`. That is the whole interface.
 
 ## Wire real data
 
-Replace `data/prices.csv` with your own, honouring the contract in `asof.toml`
+Replace `data/prices.csv` with your own, honouring the contract in `research2prod.toml`
 (columns, types, knowledge-time column). Add a `[[contracts]]` block and a
 `data/<name>.csv` for every new input. The contract probe refuses a signal that
 reads anything the contract does not promise.
@@ -207,7 +207,7 @@ PYPROJECT = '''[project]
 name = "{name}"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["asof"]
+dependencies = ["research2prod"]
 
 [dependency-groups]
 dev = ["pytest>=8.0"]
@@ -248,14 +248,14 @@ def scaffold(name: str, target: Path, *, today: date | None = None) -> list[str]
     hold_start = today + timedelta(days=1)
 
     files = {
-        "asof.toml": ASOF_TOML.format(name=name, disc_start=disc_start, disc_end=disc_end,
+        "research2prod.toml": RESEARCH2PROD_TOML.format(name=name, disc_start=disc_start, disc_end=disc_end,
                                       val_start=val_start, val_end=val_end, hold_start=hold_start),
         "signals/momentum.py": EXAMPLE_SIGNAL,
         "tests/test_signals.py": TEST_SIGNALS,
         "README.md": README.format(name=name, val_end=val_end),
         ".gitignore": GITIGNORE,
         "pyproject.toml": PYPROJECT.format(name=name),
-        "data/README.md": "One CSV per declared input, named for it. Each must honour its contract in asof.toml.\n",
+        "data/README.md": "One CSV per declared input, named for it. Each must honour its contract in research2prod.toml.\n",
         "promoted/.gitkeep": "",
     }
     target.mkdir(parents=True, exist_ok=True)

@@ -1,8 +1,8 @@
-# asof
+# research2prod
 
 **Write the signal once. It is already production code.**
 
-`asof` is a guided, self-service bridge from quant research to production
+`research2prod` is a guided, self-service bridge from quant research to production
 trading — for quant researchers and PMs who can write working Python but have
 no idea what happens after "the backtest looks good." There is no handover.
 There is no quant developer rebuilding the signal from a notebook, and no
@@ -11,21 +11,21 @@ research. The research code runs in production unchanged, because the
 project makes it impossible to write it any other way.
 
 ```
-asof new alpha-lab                       # a project with ground, contracts, sample data, one signal, tests
-asof check momentum --as-of 2026-09-15   # would promotion accept it? look-ahead · determinism · declaration · contract
-asof backtest momentum                   # discovery / validation splits, same code path as production
-asof promote momentum --as-of 2026-09-15 # freeze: certificate with golden output, source hash, environment, backtest
-asof export momentum                     # the deployable unit: runner, Dockerfile, schedule, operator README
+research2prod new alpha-lab                       # a project with ground, contracts, sample data, one signal, tests
+research2prod check momentum --as-of 2026-09-15   # would promotion accept it? look-ahead · determinism · declaration · contract
+research2prod backtest momentum                   # discovery / validation splits, same code path as production
+research2prod promote momentum --as-of 2026-09-15 # freeze: certificate with golden output, source hash, environment, backtest
+research2prod export momentum                     # the deployable unit: runner, Dockerfile, schedule, operator README
 ```
 
 `git push`, and the job runs on schedule, publishing
 `(as_of, key, score, model, version, fingerprint, published_at)` rows to the
 sink your trading system already reads. Every command ends by naming the next
-one; `asof status` answers "where am I?" at any moment.
+one; `research2prod status` answers "where am I?" at any moment.
 
-<p align="center"><img src="docs/session.svg" alt="asof: the five commands, from a fresh project to a deployable bundle" width="100%"></p>
+<p align="center"><img src="docs/session.svg" alt="research2prod: the five commands, from a fresh project to a deployable bundle" width="100%"></p>
 
-<sub>Recorded from the real CLI against a fresh <code>asof new</code> project (<code>docs/record_session.py</code>). The sample panel is synthetic; the gate, the freeze and the bundle are not.</sub>
+<sub>Recorded from the real CLI against a fresh <code>research2prod new</code> project (<code>docs/record_session.py</code>). The sample panel is synthetic; the gate, the freeze and the bundle are not.</sub>
 
 ---
 
@@ -40,7 +40,7 @@ work back to someone.
 
 Every fix I have seen for this was a **conversion**: a translator, a code
 generator, a "productionisation" checklist. Conversions drift, because the
-research version keeps moving and the production version is a copy. `asof`
+research version keeps moving and the production version is a copy. `research2prod`
 has no conversion step. Instead the template enforces, from the first line
 of research, the properties production would otherwise have to add:
 
@@ -48,10 +48,10 @@ of research, the properties production would otherwise have to add:
 |---|---|
 | **No look-ahead** | A signal receives an `AsOfView` bounded at one date. It has no way to reach past it. Not a convention — there is nothing there to read. |
 | **Declared inputs and parameters** | `@model(inputs=…, params=…)`. Undeclared inputs raise; unused declarations fail the gate. |
-| **Data the platform actually promises** | Each input has a **data contract** in `asof.toml`: columns, types, knowledge-time column, owner, freshness. A signal that reads an unpromised column is refused before promotion, not discovered on the first production morning. |
+| **Data the platform actually promises** | Each input has a **data contract** in `research2prod.toml`: columns, types, knowledge-time column, owner, freshness. A signal that reads an unpromised column is refused before promotion, not discovered on the first production morning. |
 | **One execution path** | Research runs, backtests, probes and production runs all call the same `run()`. The backtest *is* the integration test. |
 | **Determinism** | Two runs must produce identical bytes; unseeded randomness and clock reads fail the gate. |
-| **Frozen ground** | Universe, calendar, costs and splits live in `asof.toml`, never in the signal, and are fingerprinted into every certificate. |
+| **Frozen ground** | Universe, calendar, costs and splits live in `research2prod.toml`, never in the signal, and are fingerprinted into every certificate. |
 | **Immutable promotion** | `promote` appends a version; it never edits one. There is no `--force`. A gate with an override is a suggestion. |
 
 So `promote` is not a translation. It is a **freeze**: the probes pass, the
@@ -66,7 +66,7 @@ Instant, because nothing was converted.
 ## What a signal looks like
 
 ```python
-from asof import Input, Param, model
+from research2prod import Input, Param, model
 
 @model(
     name="momentum",
@@ -99,9 +99,9 @@ Promotion asks five questions mechanically, and each fails closed:
 2. **Determinism** — run twice; compare bytes.
 3. **Declaration** — did the body use exactly what it declared?
 4. **Contract** — is every input under a contract, does the data honour it today, and did the signal read only promised columns?
-5. **Backtest gates** — optional floors on the validation split (`min_days`, `min_sharpe`, `min_hit_rate`, `max_drawdown`) declared in `asof.toml` by whoever owns the project's standards.
+5. **Backtest gates** — optional floors on the validation split (`min_days`, `min_sharpe`, `min_hit_rate`, `max_drawdown`) declared in `research2prod.toml` by whoever owns the project's standards.
 
-`asof replay` re-runs a promoted version on its checked date later and says
+`research2prod replay` re-runs a promoted version on its checked date later and says
 one of three things: still reproduces; the **data was restated** (same source
 hash, different answer — tell the contract owner); or the **code changed** (a
 new version, never an edit).
@@ -117,8 +117,8 @@ against one row shape:
 as_of, key, score, model, version, fingerprint, published_at
 ```
 
-`asof.toml` declares the sink: `file` (JSON-lines, what most intakes already
-read), `http` (POST the batch to a registry; token from `ASOF_SINK_TOKEN`), or
+`research2prod.toml` declares the sink: `file` (JSON-lines, what most intakes already
+read), `http` (POST the batch to a registry; token from `RESEARCH2PROD_SINK_TOKEN`), or
 `custom` (`package.module:function` — route into your own book without forking
 this library).
 
@@ -128,13 +128,13 @@ this library).
 
 ```
 alpha-lab/
-├── asof.toml              the ground: calendar, universe, costs, splits, sink, schedule, data contracts
+├── research2prod.toml              the ground: calendar, universe, costs, splits, sink, schedule, data contracts
 ├── signals/               researcher writes here; one file per signal
 ├── data/                  one CSV per declared input, named for it
 ├── tests/                 CI runs the promotion gate over every signal
 └── promoted/
     ├── momentum/v1.json   the certificate (append-only)
-    └── momentum/v1/       the deployable bundle: run.py · momentum.py · asof.toml · certificate.json
+    └── momentum/v1/       the deployable bundle: run.py · momentum.py · research2prod.toml · certificate.json
                            requirements.txt · Dockerfile · README.md · .github/workflows/
 ```
 
@@ -146,8 +146,8 @@ they publish are not.
 ## Install
 
 ```bash
-pip install git+https://github.com/henryzhangpku/asof
-asof new alpha-lab && cd alpha-lab && asof status
+pip install git+https://github.com/henryzhangpku/research2prod
+research2prod new alpha-lab && cd alpha-lab && research2prod status
 ```
 
 Python ≥ 3.11. Dependencies: `pydantic`, `typer`, `rich`. No dataframe
@@ -160,7 +160,7 @@ truncation happens *below* the signal, whatever the frame is made of.
 ## Relationship to Autonomous Quant Researcher
 
 [autonomous-quant-researcher](https://github.com/henryzhangpku/autonomous-quant-researcher)
-is an agent that discovers and refutes hypotheses on its own. `asof` is how
+is an agent that discovers and refutes hypotheses on its own. `research2prod` is how
 *any* research — a machine's or a human's — becomes a production signal.
 Both share one idea: **declaration → trusted evaluation → gate → immutable
 record**. Machine discovers, human codifies, template ships.

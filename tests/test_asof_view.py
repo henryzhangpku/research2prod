@@ -16,7 +16,7 @@ from datetime import date
 
 import pytest
 
-from asof.data import AsOfView, Dataset, UndeclaredInput
+from research2prod.data import AsOfView, Dataset, UndeclaredInput
 
 
 def view(rows, as_of, **params):

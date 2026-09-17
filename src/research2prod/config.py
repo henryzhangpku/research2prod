@@ -1,4 +1,4 @@
-"""The project's fixed facts: ``asof.toml``.
+"""The project's fixed facts: ``research2prod.toml``.
 
 A signal is written against a universe, a calendar, a cost model and a set of
 date splits. None of those belong in the signal, because none of them are the
@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field, field_validator
 from .contracts import DataContract
 from .sink import Sink
 
-DEFAULT_CONFIG = Path("asof.toml")
+DEFAULT_CONFIG = Path("research2prod.toml")
 
 Frequency = Literal["daily", "weekly", "monthly"]
 
@@ -124,7 +124,7 @@ class Splits(BaseModel):
 class Project(BaseModel):
     name: str
     description: str = ""
-    #: Where signals and data live, relative to asof.toml. A scaffolded
+    #: Where signals and data live, relative to research2prod.toml. A scaffolded
     #: project uses ``signals/`` and ``data/``; this repository's examples use
     #: ``examples/``.
     models: str = "signals"
@@ -133,7 +133,7 @@ class Project(BaseModel):
 
 
 class Config(BaseModel):
-    """Everything in ``asof.toml``, validated."""
+    """Everything in ``research2prod.toml``, validated."""
 
     project: Project
     calendar: Calendar = Field(default_factory=Calendar)
@@ -172,7 +172,7 @@ def load_config(path: Path | str = DEFAULT_CONFIG) -> Config:
 
 
 def find_config(start: Path | str = ".") -> Path | None:
-    """Walk up from ``start`` to the nearest ``asof.toml``."""
+    """Walk up from ``start`` to the nearest ``research2prod.toml``."""
     here = Path(start).resolve()
     for candidate in (here, *here.parents):
         if (candidate / DEFAULT_CONFIG.name).is_file():

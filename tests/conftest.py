@@ -14,7 +14,7 @@ from datetime import date, timedelta
 
 import pytest
 
-from asof.model import REGISTRY
+from research2prod.model import REGISTRY
 
 #: A short panel with two symbols moving in opposite directions, so that any
 #: model reading past its as-of date produces a visibly different answer rather

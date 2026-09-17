@@ -1,6 +1,6 @@
 """The contract probe: what the platform promises is what a signal may use.
 
-Each test builds a small project on disk -- data directory plus ``asof.toml``
+Each test builds a small project on disk -- data directory plus ``research2prod.toml``
 -- and asks the probe the same question the promotion gate would. The
 interesting cases are the ones that pass code review: a column that exists in
 the extract but is not promised, and a signal whose declared input has no
@@ -14,10 +14,10 @@ from pathlib import Path
 
 import pytest
 
-from asof import Param, model
-from asof.config import Config, load_config
-from asof.contracts import Column, DataContract, check_rows
-from asof.probes import contract
+from research2prod import Param, model
+from research2prod.config import Config, load_config
+from research2prod.contracts import Column, DataContract, check_rows
+from research2prod.probes import contract
 
 AS_OF = date(2026, 1, 20)
 
@@ -44,7 +44,7 @@ columns = [
 
 
 def _config(tmp_path: Path, contracts: str) -> Config:
-    path = tmp_path / "asof.toml"
+    path = tmp_path / "research2prod.toml"
     path.write_text(BASE_TOML.format(contracts=contracts), encoding="utf-8")
     return load_config(path)
 
@@ -68,7 +68,7 @@ def test_a_conforming_project_passes(world):
 def test_no_config_is_a_failure_not_a_pass(world):
     verdict = contract(_honest_model(), AS_OF, data_dir=world, config=None)
     assert not verdict.passed
-    assert "asof.toml" in verdict.detail
+    assert "research2prod.toml" in verdict.detail
 
 
 def test_a_declared_input_without_a_contract_fails(world):
