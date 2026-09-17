@@ -1,9 +1,10 @@
 # research2prod
 
-**Write the signal once. It is already production code.**
+**Guided self-service from quant research to production.**
+Write the signal once; it is already production code.
 
-`research2prod` is a guided, self-service bridge from quant research to production
-trading — for quant researchers and PMs who can write working Python but have
+`research2prod` is the bridge from quant research to production trading, built
+to be walked without a guide — for quant researchers and PMs who can write working Python but have
 no idea what happens after "the backtest looks good." There is no handover.
 There is no quant developer rebuilding the signal from a notebook, and no
 weeks of back-and-forth verifying that the rebuild still agrees with the

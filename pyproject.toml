@@ -1,7 +1,7 @@
 [project]
 name = "research2prod"
 version = "0.2.0"
-description = "Write the signal once; it is already production code. A guided, self-service bridge from quant research to production trading."
+description = "Guided self-service from quant research to production. Write the signal once; it is already production code."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
