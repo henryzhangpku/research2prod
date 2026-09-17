@@ -1,8 +1,12 @@
 [project]
 name = "asof"
-version = "0.1.0"
-description = "Promote a research model to a production job without an engineer in the loop"
+version = "0.2.0"
+description = "Write the signal once; it is already production code. A guided, self-service bridge from quant research to production trading."
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.11"
+authors = [{ name = "Henry Zhang" }]
+keywords = ["quantitative-research", "signals", "backtesting", "point-in-time", "mlops", "research-to-production"]
 dependencies = [
     "pydantic>=2.7",
     "typer>=0.12",
@@ -11,6 +15,9 @@ dependencies = [
 
 [project.scripts]
 asof = "asof.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/henryzhangpku/asof"
 
 [dependency-groups]
 dev = ["pytest>=8.0", "pytest-cov>=5.0", "hypothesis>=6.100"]
@@ -23,24 +30,4 @@ build-backend = "hatchling.build"
 packages = ["src/asof"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
 testpaths = ["tests"]
-
-[tool.ruff]
-line-length = 100
-target-version = "py311"
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP", "RUF", "ARG", "SIM", "C4"]
-ignore = [
-    # Typer's whole interface is Option()/Argument() in defaults.
-    "B008",
-    # Long lines are almost always prose in a docstring or a table.
-    "E501",
-]
-
-[tool.ruff.lint.per-file-ignores]
-# Example models take a ctx they may not use every branch of.
-"examples/*" = ["ARG001"]
-# Fixtures legitimately take arguments they only forward.
-"tests/*" = ["ARG001", "ARG005"]

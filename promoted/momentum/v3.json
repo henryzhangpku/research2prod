@@ -1,0 +1,154 @@
+{
+ "backtest": {
+  "by_split": {
+   "discovery": {
+    "ann_sharpe": 2.366826,
+    "avg_turnover": 0.069767,
+    "days": 86,
+    "hit_rate": 0.302326,
+    "max_drawdown": -0.066286,
+    "mean_bps": 17.49801,
+    "total_return": 0.155498
+   },
+   "validation": {
+    "ann_sharpe": 4.695397,
+    "avg_turnover": 0.093023,
+    "days": 43,
+    "hit_rate": 0.534884,
+    "max_drawdown": -0.04091,
+    "mean_bps": 50.590383,
+    "total_return": 0.234833
+   }
+  },
+  "end": "2026-06-30",
+  "gates": [],
+  "overall": {
+   "ann_sharpe": 3.286333,
+   "avg_turnover": 0.077519,
+   "days": 129,
+   "hit_rate": 0.379845,
+   "max_drawdown": -0.066286,
+   "mean_bps": 28.528801,
+   "total_return": 0.426847
+  },
+  "project_fingerprint": "9f3f2e4991269fb8",
+  "start": "2026-01-01"
+ },
+ "checked_as_of": "2026-06-30",
+ "contracts": [
+  {
+   "columns": [
+    {
+     "description": "Trading day; also knowledge time for a close.",
+     "kind": "date",
+     "name": "date"
+    },
+    {
+     "description": "",
+     "kind": "str",
+     "name": "symbol"
+    },
+    {
+     "description": "Official close, unadjusted.",
+     "kind": "float",
+     "name": "close"
+    }
+   ],
+   "description": "Daily closes, one row per symbol per trading day.",
+   "freshness": "T+0 18:00 America/New_York",
+   "knowledge_time": "date",
+   "name": "prices",
+   "owner": "platform"
+  }
+ ],
+ "environment": {
+  "packages": {
+   "asof": "0.1.0",
+   "pydantic": "2.13.5",
+   "rich": "15.0.0",
+   "typer": "0.27.2"
+  },
+  "platform": "win32",
+  "python": "3.11.14"
+ },
+ "fingerprint": "34ab44949483f1c9",
+ "golden": {
+  "as_of": "2026-06-30",
+  "output": {
+   "ALFA": 0.171317,
+   "BRVO": 0.212263,
+   "CHLI": 0.124871,
+   "DLTA": -0.042055,
+   "ECHO": -0.048284,
+   "FXTR": -0.182705,
+   "GOLF": 0.422843,
+   "HOTL": -0.188676
+  },
+  "sha256": "e59ffc1098e17a32306ef9317c4646fdb35f6a1ef74e7fcbba74ab520c1f4077"
+ },
+ "model": "momentum",
+ "probes": [
+  {
+   "detail": "removing every row after the as-of date did not move the answer",
+   "passed": true,
+   "probe": "look-ahead"
+  },
+  {
+   "detail": "two runs produced identical output",
+   "passed": true,
+   "probe": "determinism"
+  },
+  {
+   "detail": "1 input(s) and 3 parameter(s), all declared and all used",
+   "passed": true,
+   "probe": "declaration"
+  },
+  {
+   "detail": "1 input(s) under contract; every column read is a promised column",
+   "passed": true,
+   "probe": "contract"
+  }
+ ],
+ "project_fingerprint": "9f3f2e4991269fb8",
+ "promoted_at": "2026-09-17T06:17:42+00:00",
+ "source": {
+  "function": "momentum",
+  "path": "momentum.py",
+  "sha256": "41778fb0407ba61aebf29608e6502e8c0c47afce70d835ebe0ec55b47134d2a6"
+ },
+ "spec": {
+  "description": "Cross-sectional price momentum over a formation window, skipping the recent reversal.",
+  "inputs": [
+   {
+    "description": "Daily closes, one row per symbol per day.",
+    "name": "prices"
+   }
+  ],
+  "name": "momentum",
+  "output": {
+   "description": "",
+   "name": "score"
+  },
+  "params": [
+   {
+    "default": 60,
+    "description": "Length of the formation window, in observations.",
+    "kind": "int",
+    "name": "lookback_days"
+   },
+   {
+    "default": 5,
+    "description": "Most recent observations left out, where short-horizon reversal lives.",
+    "kind": "int",
+    "name": "skip_days"
+   },
+   {
+    "default": 40,
+    "description": "Symbols with less history than this are not scored at all.",
+    "kind": "int",
+    "name": "min_history"
+   }
+  ]
+ },
+ "version": 3
+}

@@ -22,3 +22,7 @@ htmlcov/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Exported bundles are committed; the data they run on and what they publish are not
+promoted/*/v*/data/
+promoted/*/v*/signals/

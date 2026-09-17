@@ -8,6 +8,8 @@
 [project]
 name = "asof-examples"
 description = "The example signals that ship with asof."
+models = "examples"
+data = "data"
 
 [calendar]
 frequency = "daily"

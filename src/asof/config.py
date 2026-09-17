@@ -22,6 +22,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 
 from .contracts import DataContract
+from .sink import Sink
 
 DEFAULT_CONFIG = Path("asof.toml")
 
@@ -123,6 +124,12 @@ class Splits(BaseModel):
 class Project(BaseModel):
     name: str
     description: str = ""
+    #: Where signals and data live, relative to asof.toml. A scaffolded
+    #: project uses ``signals/`` and ``data/``; this repository's examples use
+    #: ``examples/``.
+    models: str = "signals"
+    data: str = "data"
+    promoted: str = "promoted"
 
 
 class Config(BaseModel):
@@ -133,6 +140,10 @@ class Config(BaseModel):
     universe: Universe = Field(default_factory=Universe)
     costs: Costs = Field(default_factory=Costs)
     backtest: Backtest = Field(default_factory=Backtest)
+    sink: Sink = Field(default_factory=Sink)
+    #: When the deployed job runs, as five-field cron in UTC. The bundle's
+    #: workflow uses it verbatim.
+    schedule: str = "30 22 * * 1-5"
     splits: Splits
     contracts: list[DataContract] = Field(default_factory=list)
 
