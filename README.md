@@ -1,5 +1,7 @@
 # research2prod
 
+> **Archived demo.** This repository is frozen as a public demo; research continues privately. No new features are planned.
+
 **Guided self-service from quant research to production.**
 Write the signal once; it is already production code.
 
